@@ -17,9 +17,10 @@
       --text-secondary: #a8a8a8;
       --border-hairline: rgba(255,255,255,.16);
       --focus-ring: #ffffff;
+      --crimson: 221, 51, 51;
       --gutter: clamp(24px, 5.2vw, 88px);
       --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
-      --dur-base: 240ms; --dur-reveal: 900ms;
+      --dur-base: 240ms; --dur-slow: 520ms; --dur-reveal: 900ms;
       --ease-out: cubic-bezier(.16,1,.3,1);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
@@ -32,38 +33,78 @@
       font-size: 18px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
+    /* ---------- Background: a smear of light that trails the cursor ---------- */
+    .field {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity var(--dur-slow) var(--ease-out);
+    }
+    .field.is-live { opacity: 1; }
+    .smear {
+      position: absolute;
+      left: 0; top: 0;
+      border-radius: 50%;
+      will-change: transform;
+    }
+    /* Leading light: tight, white */
+    .smear--light {
+      width: 520px; height: 220px;
+      margin: -110px 0 0 -260px;
+      background: radial-gradient(closest-side, rgba(255,255,255,.10), rgba(255,255,255,.04) 55%, transparent);
+    }
+    /* Trailing tail: wider, faint crimson, lags further behind */
+    .smear--tail {
+      width: 760px; height: 300px;
+      margin: -150px 0 0 -380px;
+      background: radial-gradient(closest-side, rgba(var(--crimson), .16), rgba(var(--crimson), .05) 55%, transparent);
+    }
+
+    /* ---------- Layout ---------- */
     .splash {
+      position: relative;
+      z-index: 1;
       min-height: 100svh;
       display: grid;
       grid-template-rows: 1fr auto;
       padding: var(--gutter);
     }
 
-    /* The mark: left-aligned to the gutter, vertically centred */
     .mark {
       align-self: center;
+      justify-self: center;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: var(--sp-6);
+      text-align: center;
     }
     .logo {
       position: relative;
-      width: clamp(200px, 28vw, 320px);
+      width: clamp(220px, 30vw, 360px);
       aspect-ratio: 488 / 301;
+      --mx: 50%;
+      --my: 50%;
+      --r: 90px;
     }
     .logo img {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
       display: block;
+      user-select: none;
+      -webkit-user-drag: none;
     }
-    /* Load moment: a horizontally smeared ghost of the mark resolves into the sharp one.
-       Only opacity and transform animate. */
+
+    /* Load moment: a smeared ghost resolves into the sharp mark */
     .logo .ghost {
       filter: blur(14px);
-      transform: scaleX(1.18);
-      transform-origin: left center;
+      transform-origin: center;
       opacity: 0;
       animation: ghost var(--dur-reveal) var(--ease-out) both;
     }
@@ -72,13 +113,24 @@
       animation: sharpen var(--dur-reveal) var(--ease-out) 260ms both;
     }
     @keyframes ghost {
-      0%   { opacity: 0;   transform: scaleX(1.18) translateX(-14px); }
+      0%   { opacity: 0;  transform: scaleX(1.18); }
       35%  { opacity: .9; }
-      100% { opacity: 0;   transform: scaleX(1) translateX(0); }
+      100% { opacity: 0;  transform: scaleX(1); }
     }
-    @keyframes sharpen {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+    @keyframes sharpen { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Hover: the mark goes out of focus in a circle around the cursor */
+    .logo .lens {
+      filter: blur(7px);
+      opacity: 0;
+      transition: opacity var(--dur-base) var(--ease-out);
+      -webkit-mask-image: radial-gradient(circle var(--r) at var(--mx) var(--my), #000 0%, #000 35%, transparent 100%);
+              mask-image: radial-gradient(circle var(--r) at var(--mx) var(--my), #000 0%, #000 35%, transparent 100%);
+    }
+    .logo.is-hover .lens { opacity: 1; }
+    .logo.is-hover .sharp {
+      -webkit-mask-image: radial-gradient(circle var(--r) at var(--mx) var(--my), transparent 0%, transparent 30%, #000 100%);
+              mask-image: radial-gradient(circle var(--r) at var(--mx) var(--my), transparent 0%, transparent 30%, #000 100%);
     }
 
     .tagline {
@@ -90,7 +142,7 @@
     }
     @keyframes rise { to { opacity: 1; transform: none; } }
 
-    /* Footer: hairline rule, contact left, sign-off right */
+    /* Footer */
     .foot {
       display: flex;
       flex-wrap: wrap;
@@ -123,18 +175,28 @@
     }
     .signoff { color: var(--text-secondary); }
 
+    /* Pointer effects only where there is a real hovering pointer */
+    @media (hover: none) {
+      .field, .logo .lens { display: none; }
+    }
     @media (prefers-reduced-motion: reduce) {
-      .logo .ghost { display: none; }
+      .field, .logo .ghost, .logo .lens { display: none; }
       .logo .sharp, .tagline, .foot { animation: none; opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
+  <div class="field" aria-hidden="true">
+    <div class="smear smear--tail"></div>
+    <div class="smear smear--light"></div>
+  </div>
+
   <main class="splash">
     <div class="mark">
       <h1 class="logo">
         <img class="ghost" src="brand_assets/logo-wordmark-white.png" alt="" aria-hidden="true">
         <img class="sharp" src="brand_assets/logo-wordmark-white.png" alt="BLURRED SPACES">
+        <img class="lens"  src="brand_assets/logo-wordmark-white.png" alt="" aria-hidden="true">
       </h1>
       <p class="tagline">creatively strategic</p>
     </div>
@@ -144,5 +206,65 @@
       <p class="signoff">© 2025- BLURREDSPACES.</p>
     </footer>
   </main>
+
+  <script>
+    (() => {
+      const canHover = matchMedia('(hover: hover)').matches;
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!canHover || calm) return;
+
+      const field = document.querySelector('.field');
+      const light = document.querySelector('.smear--light');
+      const tail  = document.querySelector('.smear--tail');
+      const logo  = document.querySelector('.logo');
+
+      // Target (cursor) and two followers that ease toward it at different rates
+      const t = { x: innerWidth / 2, y: innerHeight / 2 };
+      const a = { ...t }, b = { ...t };
+      // Logo lens position, eased
+      const m = { x: 0, y: 0, tx: 0, ty: 0 };
+      let raf = 0;
+
+      const smear = (el, p, prev, k) => {
+        const vx = p.x - prev.x;
+        const stretch = 1 + Math.min(Math.abs(vx) / 40, 1.4);   // horizontal smear grows with speed
+        el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${stretch}, ${1 / Math.sqrt(stretch)})`;
+      };
+
+      const tick = () => {
+        const pa = { ...a }, pb = { ...b };
+        a.x += (t.x - a.x) * 0.18; a.y += (t.y - a.y) * 0.18;
+        b.x += (t.x - b.x) * 0.06; b.y += (t.y - b.y) * 0.06;
+        smear(light, a, pa);
+        smear(tail,  b, pb);
+
+        m.x += (m.tx - m.x) * 0.25; m.y += (m.ty - m.y) * 0.25;
+        logo.style.setProperty('--mx', m.x + 'px');
+        logo.style.setProperty('--my', m.y + 'px');
+
+        const settled = Math.abs(t.x - b.x) + Math.abs(t.y - b.y) < 0.5 &&
+                        Math.abs(m.tx - m.x) + Math.abs(m.ty - m.y) < 0.5;
+        raf = settled ? 0 : requestAnimationFrame(tick);
+      };
+      const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+
+      addEventListener('pointermove', (e) => {
+        t.x = e.clientX; t.y = e.clientY;
+        field.classList.add('is-live');
+        const r = logo.getBoundingClientRect();
+        m.tx = e.clientX - r.left; m.ty = e.clientY - r.top;
+        kick();
+      }, { passive: true });
+
+      document.documentElement.addEventListener('pointerleave', () => field.classList.remove('is-live'));
+
+      logo.addEventListener('pointerenter', (e) => {
+        const r = logo.getBoundingClientRect();
+        m.x = m.tx = e.clientX - r.left; m.y = m.ty = e.clientY - r.top;
+        logo.classList.add('is-hover');
+      });
+      logo.addEventListener('pointerleave', () => logo.classList.remove('is-hover'));
+    })();
+  </script>
 </body>
 </html>
