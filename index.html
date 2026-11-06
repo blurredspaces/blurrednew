@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#dd3333">
+  <title>BLURRED SPACES</title>
+  <meta name="description" content="Blurred Spaces is a creative studio working where music, radio and brand meet. Creatively strategic.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Tokens from the Blurred Spaces Design System */
+    :root {
+      --surface-page: #090909;
+      --text-primary: #ffffff;
+      --text-secondary: #a8a8a8;
+      --border-hairline: rgba(255,255,255,.16);
+      --focus-ring: #ffffff;
+      --gutter: clamp(24px, 5.2vw, 88px);
+      --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+      --dur-base: 240ms; --dur-reveal: 900ms;
+      --ease-out: cubic-bezier(.16,1,.3,1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--surface-page);
+      color: var(--text-primary);
+      font-family: "Poppins", system-ui, sans-serif;
+      font-weight: 500;
+      font-size: 18px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .splash {
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: var(--gutter);
+    }
+
+    /* The mark: left-aligned to the gutter, vertically centred */
+    .mark {
+      align-self: center;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-6);
+    }
+    .logo {
+      position: relative;
+      width: clamp(200px, 28vw, 320px);
+      aspect-ratio: 488 / 301;
+    }
+    .logo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      display: block;
+    }
+    /* Load moment: a horizontally smeared ghost of the mark resolves into the sharp one.
+       Only opacity and transform animate. */
+    .logo .ghost {
+      filter: blur(14px);
+      transform: scaleX(1.18);
+      transform-origin: left center;
+      opacity: 0;
+      animation: ghost var(--dur-reveal) var(--ease-out) both;
+    }
+    .logo .sharp {
+      opacity: 0;
+      animation: sharpen var(--dur-reveal) var(--ease-out) 260ms both;
+    }
+    @keyframes ghost {
+      0%   { opacity: 0;   transform: scaleX(1.18) translateX(-14px); }
+      35%  { opacity: .9; }
+      100% { opacity: 0;   transform: scaleX(1) translateX(0); }
+    }
+    @keyframes sharpen {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .tagline {
+      color: var(--text-secondary);
+      font-size: 20px;
+      opacity: 0;
+      transform: translateY(14px);
+      animation: rise var(--dur-reveal) var(--ease-out) 600ms both;
+    }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+
+    /* Footer: hairline rule, contact left, sign-off right */
+    .foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--sp-4) var(--sp-7);
+      padding-top: var(--sp-5);
+      border-top: 1px solid var(--border-hairline);
+      font-size: 16px;
+      opacity: 0;
+      animation: rise var(--dur-reveal) var(--ease-out) 720ms both;
+    }
+    .label {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      margin-right: var(--sp-4);
+    }
+    .foot a {
+      color: var(--text-primary);
+      text-decoration: none;
+      font-weight: 700;
+      transition: opacity var(--dur-base) var(--ease-out);
+    }
+    .foot a:hover { opacity: .6; }
+    .foot a:active { opacity: .4; }
+    .foot a:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+    .signoff { color: var(--text-secondary); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .logo .ghost { display: none; }
+      .logo .sharp, .tagline, .foot { animation: none; opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="splash">
+    <div class="mark">
+      <h1 class="logo">
+        <img class="ghost" src="brand_assets/logo-wordmark-white.png" alt="" aria-hidden="true">
+        <img class="sharp" src="brand_assets/logo-wordmark-white.png" alt="BLURRED SPACES">
+      </h1>
+      <p class="tagline">creatively strategic</p>
+    </div>
+
+    <footer class="foot">
+      <p><span class="label">EMAIL :</span><a href="mailto:connect@blurredspaces.com">connect@blurredspaces.com</a></p>
+      <p class="signoff">© 2025- BLURREDSPACES.</p>
+    </footer>
+  </main>
+</body>
+</html>
