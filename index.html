@@ -8,7 +8,7 @@
   <meta name="description" content="Blurred Spaces is a creative studio working where music, radio and brand meet. Creatively strategic.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     /* Tokens from the Blurred Spaces Design System */
     :root {
@@ -17,10 +17,9 @@
       --text-secondary: #a8a8a8;
       --border-hairline: rgba(255,255,255,.16);
       --focus-ring: #ffffff;
-      --crimson: 221, 51, 51;
       --gutter: clamp(24px, 5.2vw, 88px);
       --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
-      --dur-base: 240ms; --dur-slow: 520ms; --dur-reveal: 900ms;
+      --dur-base: 240ms; --dur-reveal: 900ms;
       --ease-out: cubic-bezier(.16,1,.3,1);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; }
@@ -28,48 +27,16 @@
     body {
       background: var(--surface-page);
       color: var(--text-primary);
-      font-family: "Poppins", system-ui, sans-serif;
-      font-weight: 500;
-      font-size: 18px;
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
 
-    /* ---------- Background: a smear of light that trails the cursor ---------- */
-    .field {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-      opacity: 0;
-      transition: opacity var(--dur-slow) var(--ease-out);
-    }
-    .field.is-live { opacity: 1; }
-    .smear {
-      position: absolute;
-      left: 0; top: 0;
-      border-radius: 50%;
-      will-change: transform;
-    }
-    /* Leading light: tight, white */
-    .smear--light {
-      width: 520px; height: 220px;
-      margin: -110px 0 0 -260px;
-      background: radial-gradient(closest-side, rgba(255,255,255,.10), rgba(255,255,255,.04) 55%, transparent);
-    }
-    /* Trailing tail: wider, faint crimson, lags further behind */
-    .smear--tail {
-      width: 760px; height: 300px;
-      margin: -150px 0 0 -380px;
-      background: radial-gradient(closest-side, rgba(var(--crimson), .16), rgba(var(--crimson), .05) 55%, transparent);
-    }
-
-    /* ---------- Layout ---------- */
     .splash {
-      position: relative;
-      z-index: 1;
       min-height: 100svh;
       display: grid;
       grid-template-rows: 1fr auto;
@@ -135,7 +102,9 @@
 
     .tagline {
       color: var(--text-secondary);
-      font-size: 20px;
+      font-size: 19px;
+      font-weight: 400;
+      letter-spacing: -0.005em;
       opacity: 0;
       transform: translateY(14px);
       animation: rise var(--dur-reveal) var(--ease-out) 600ms both;
@@ -151,20 +120,21 @@
       gap: var(--sp-4) var(--sp-7);
       padding-top: var(--sp-5);
       border-top: 1px solid var(--border-hairline);
-      font-size: 16px;
+      font-size: 15px;
       opacity: 0;
       animation: rise var(--dur-reveal) var(--ease-out) 720ms both;
     }
     .label {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: .14em;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .16em;
+      color: var(--text-secondary);
       margin-right: var(--sp-4);
     }
     .foot a {
       color: var(--text-primary);
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 500;
       transition: opacity var(--dur-base) var(--ease-out);
     }
     .foot a:hover { opacity: .6; }
@@ -173,24 +143,22 @@
       outline: 2px solid var(--focus-ring);
       outline-offset: 3px;
     }
-    .signoff { color: var(--text-secondary); }
+    .signoff {
+      color: var(--text-secondary);
+      font-size: 13px;
+      letter-spacing: .04em;
+    }
 
-    /* Pointer effects only where there is a real hovering pointer */
     @media (hover: none) {
-      .field, .logo .lens { display: none; }
+      .logo .lens { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .field, .logo .ghost, .logo .lens { display: none; }
+      .logo .ghost, .logo .lens { display: none; }
       .logo .sharp, .tagline, .foot { animation: none; opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
-  <div class="field" aria-hidden="true">
-    <div class="smear smear--tail"></div>
-    <div class="smear smear--light"></div>
-  </div>
-
   <main class="splash">
     <div class="mark">
       <h1 class="logo">
@@ -203,7 +171,7 @@
 
     <footer class="foot">
       <p><span class="label">EMAIL :</span><a href="mailto:connect@blurredspaces.com">connect@blurredspaces.com</a></p>
-      <p class="signoff">© 2025- BLURREDSPACES.</p>
+      <p class="signoff">© 2026 BLURREDSPACES.</p>
     </footer>
   </main>
 
@@ -213,56 +181,28 @@
       const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (!canHover || calm) return;
 
-      const field = document.querySelector('.field');
-      const light = document.querySelector('.smear--light');
-      const tail  = document.querySelector('.smear--tail');
-      const logo  = document.querySelector('.logo');
-
-      // Target (cursor) and two followers that ease toward it at different rates
-      const t = { x: innerWidth / 2, y: innerHeight / 2 };
-      const a = { ...t }, b = { ...t };
-      // Logo lens position, eased
+      const logo = document.querySelector('.logo');
+      // Lens position eases toward the cursor so the blur glides rather than jumps
       const m = { x: 0, y: 0, tx: 0, ty: 0 };
       let raf = 0;
 
-      const smear = (el, p, prev, k) => {
-        const vx = p.x - prev.x;
-        const stretch = 1 + Math.min(Math.abs(vx) / 40, 1.4);   // horizontal smear grows with speed
-        el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${stretch}, ${1 / Math.sqrt(stretch)})`;
-      };
-
       const tick = () => {
-        const pa = { ...a }, pb = { ...b };
-        a.x += (t.x - a.x) * 0.18; a.y += (t.y - a.y) * 0.18;
-        b.x += (t.x - b.x) * 0.06; b.y += (t.y - b.y) * 0.06;
-        smear(light, a, pa);
-        smear(tail,  b, pb);
-
         m.x += (m.tx - m.x) * 0.25; m.y += (m.ty - m.y) * 0.25;
         logo.style.setProperty('--mx', m.x + 'px');
         logo.style.setProperty('--my', m.y + 'px');
-
-        const settled = Math.abs(t.x - b.x) + Math.abs(t.y - b.y) < 0.5 &&
-                        Math.abs(m.tx - m.x) + Math.abs(m.ty - m.y) < 0.5;
-        raf = settled ? 0 : requestAnimationFrame(tick);
+        raf = Math.abs(m.tx - m.x) + Math.abs(m.ty - m.y) < 0.5 ? 0 : requestAnimationFrame(tick);
       };
-      const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
-
-      addEventListener('pointermove', (e) => {
-        t.x = e.clientX; t.y = e.clientY;
-        field.classList.add('is-live');
-        const r = logo.getBoundingClientRect();
-        m.tx = e.clientX - r.left; m.ty = e.clientY - r.top;
-        kick();
-      }, { passive: true });
-
-      document.documentElement.addEventListener('pointerleave', () => field.classList.remove('is-live'));
 
       logo.addEventListener('pointerenter', (e) => {
         const r = logo.getBoundingClientRect();
         m.x = m.tx = e.clientX - r.left; m.y = m.ty = e.clientY - r.top;
         logo.classList.add('is-hover');
       });
+      logo.addEventListener('pointermove', (e) => {
+        const r = logo.getBoundingClientRect();
+        m.tx = e.clientX - r.left; m.ty = e.clientY - r.top;
+        if (!raf) raf = requestAnimationFrame(tick);
+      }, { passive: true });
       logo.addEventListener('pointerleave', () => logo.classList.remove('is-hover'));
     })();
   </script>
