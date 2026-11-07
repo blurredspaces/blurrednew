@@ -204,13 +204,13 @@
 
       // Three depth layers: far glyphs are small, dim and slow; near ones are large, bright and glowing
       const LAYERS = [
-        { share: .40, size: 12, speed: [0.30, 0.45], alpha: .35, trail: 26, glow: 0 },
-        { share: .40, size: 16, speed: [0.50, 0.75], alpha: .65, trail: 22, glow: 0 },
-        { share: .20, size: 22, speed: [0.80, 1.10], alpha: 1.0, trail: 18, glow: 14 },
+        { share: .40, size: 8.4, speed: [0.30, 0.45], alpha: .35, trail: 36, glow: 0 },
+        { share: .40, size: 11.2, speed: [0.50, 0.75], alpha: .65, trail: 31, glow: 0 },
+        { share: .20, size: 15.4, speed: [0.80, 1.10], alpha: 1.0, trail: 25, glow: 10 },
       ];
       const GRAVITY = 0.022;    // only acts on drops once they have bounced
       const RESTITUTION = 0.45; // how much speed survives each later bounce
-      const TIME = 1 / 2;       // overall pace: everything (fall, arcs, flicker) runs at half speed
+      const TIME = 0.69;        // overall pace: everything (fall, arcs, flicker) scales with this
 
       let W, H, dpr, drops = [], box, last = 0;
 
@@ -267,7 +267,7 @@
           if (!d.free) {
             // First contact: a slow, high arc up and outward, wider towards the edges
             d.free = true;
-            d.vy = -(1.1 + Math.random() * 0.9) * (L.size / 16);
+            d.vy = -(1.1 + Math.random() * 0.9) * (L.size / 11.2);
             d.vx = away * (0.25 + Math.abs(d.x - box.cx) / box.half * 0.9 + Math.random() * 0.5);
           } else if (d.vy > 0.45) {
             d.vy = -d.vy * RESTITUTION;
