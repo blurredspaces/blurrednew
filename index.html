@@ -15,10 +15,9 @@
       --surface-page: #090909;
       --text-primary: #ffffff;
       --text-secondary: #a8a8a8;
-      --border-hairline: rgba(255,255,255,.16);
       --focus-ring: #ffffff;
       --gutter: clamp(24px, 5.2vw, 88px);
-      --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+      --sp-2: 8px; --sp-4: 16px; --sp-6: 32px;
       --dur-base: 240ms; --dur-reveal: 900ms;
       --ease-out: cubic-bezier(.16,1,.3,1);
     }
@@ -34,9 +33,23 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;
+      overflow: hidden;
+    }
+
+    /* ---------- Digital rain ---------- */
+    .rain {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
     }
 
     .splash {
+      position: relative;
+      z-index: 1;
       min-height: 100svh;
       display: grid;
       grid-template-rows: 1fr auto;
@@ -111,30 +124,35 @@
     }
     @keyframes rise { to { opacity: 1; transform: none; } }
 
-    /* Footer */
+    /* Footer: the address, centred, on a black backing so the rain never runs through it */
     .foot {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: var(--sp-4) var(--sp-7);
-      padding-top: var(--sp-5);
-      border-top: 1px solid var(--border-hairline);
+      justify-self: center;
+      text-align: center;
       font-size: 15px;
       opacity: 0;
       animation: rise var(--dur-reveal) var(--ease-out) 720ms both;
     }
-    .label {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: .16em;
+    .foot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .status {
+      padding: 0 var(--sp-4);
+      background: var(--surface-page);
       color: var(--text-secondary);
-      margin-right: var(--sp-4);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .08em;
     }
     .foot a {
+      display: inline-block;
+      padding: var(--sp-2) var(--sp-4);
+      background: var(--surface-page);
       color: var(--text-primary);
       text-decoration: none;
       font-weight: 500;
+      letter-spacing: .01em;
       transition: opacity var(--dur-base) var(--ease-out);
     }
     .foot a:hover { opacity: .6; }
@@ -143,22 +161,19 @@
       outline: 2px solid var(--focus-ring);
       outline-offset: 3px;
     }
-    .signoff {
-      color: var(--text-secondary);
-      font-size: 13px;
-      letter-spacing: .04em;
-    }
 
     @media (hover: none) {
       .logo .lens { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .logo .ghost, .logo .lens { display: none; }
+      .rain, .logo .ghost, .logo .lens { display: none; }
       .logo .sharp, .tagline, .foot { animation: none; opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
+  <canvas class="rain" aria-hidden="true"></canvas>
+
   <main class="splash">
     <div class="mark">
       <h1 class="logo">
@@ -170,19 +185,172 @@
     </div>
 
     <footer class="foot">
-      <p><span class="label">EMAIL :</span><a href="mailto:connect@blurredspaces.com">connect@blurredspaces.com</a></p>
-      <p class="signoff">© 2026 BLURREDSPACES.</p>
+      <p class="status">Relaunching soon.</p>
+      <a href="mailto:connect@blurredspaces.com">connect@blurredspaces.com</a>
     </footer>
   </main>
 
   <script>
+    /* ---------- Digital rain that bounces off the top of the logo ---------- */
+    (() => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const canvas = document.querySelector('.rain');
+      const ctx = canvas.getContext('2d');
+      const logo = document.querySelector('.logo');
+
+      const GLYPHS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン0123456789BLURREDSPACES:+*<>=';
+      const pick = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
+
+      // Three depth layers: far glyphs are small, dim and slow; near ones are large, bright and glowing
+      const LAYERS = [
+        { share: .40, size: 12, speed: [0.30, 0.45], alpha: .35, trail: 26, glow: 0 },
+        { share: .40, size: 16, speed: [0.50, 0.75], alpha: .65, trail: 22, glow: 0 },
+        { share: .20, size: 22, speed: [0.80, 1.10], alpha: 1.0, trail: 18, glow: 14 },
+      ];
+      const GRAVITY = 0.022;    // only acts on drops once they have bounced
+      const RESTITUTION = 0.45; // how much speed survives each later bounce
+      const TIME = 1 / 2;       // overall pace: everything (fall, arcs, flicker) runs at half speed
+
+      let W, H, dpr, drops = [], box, last = 0;
+
+      const measure = () => {
+        const r = logo.getBoundingClientRect();
+        // The mark's letters sit right at the top of the image
+        box = { left: r.left + 2, right: r.right - 2, top: r.top + 2, cx: (r.left + r.right) / 2, half: r.width / 2 };
+      };
+
+      const layerFor = () => {
+        let n = Math.random();
+        for (const l of LAYERS) { if ((n -= l.share) <= 0) return l; }
+        return LAYERS[0];
+      };
+
+      const spawn = (d, initial) => {
+        const L = d.L = layerFor();
+        d.x = Math.round(Math.random() * (W / L.size)) * L.size;
+        d.y = initial ? -Math.random() * H * 0.6 - L.size : -Math.random() * 240 - L.size;
+        d.vx = 0;
+        d.vy = L.speed[0] + Math.random() * (L.speed[1] - L.speed[0]);
+        d.free = false;     // true once it has bounced
+        d.resting = false;  // sliding along the top edge
+        d.red = Math.random() < 0.06;
+        d.trail = [{ x: d.x, y: d.y, c: pick() }];   // head first
+        return d;
+      };
+
+      const resize = () => {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = innerWidth; H = innerHeight;
+        canvas.width = W * dpr; canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        measure();
+        const count = Math.round((W / 16) * 0.6);
+        drops = Array.from({ length: count }, () => spawn({}, true));
+      };
+
+      const step = (d, dt) => {
+        const L = d.L;
+        const prevY = d.y;
+
+        if (d.free && !d.resting) d.vy += GRAVITY * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+
+        const over = d.x > box.left - L.size / 2 && d.x < box.right + L.size / 2;
+
+        if (over && d.vy > 0 && prevY <= box.top && d.y >= box.top) {
+          d.y = box.top;
+          const away = Math.sign(d.x - box.cx) || (Math.random() < .5 ? -1 : 1);
+          if (!d.free) {
+            // First contact: a slow, high arc up and outward, wider towards the edges
+            d.free = true;
+            d.vy = -(1.1 + Math.random() * 0.9) * (L.size / 16);
+            d.vx = away * (0.25 + Math.abs(d.x - box.cx) / box.half * 0.9 + Math.random() * 0.5);
+          } else if (d.vy > 0.45) {
+            d.vy = -d.vy * RESTITUTION;
+          } else {
+            d.vy = 0;
+            d.resting = true;
+          }
+        }
+
+        if (d.resting) {
+          if (over) { d.y = box.top; d.vx += Math.sign(d.vx || 1) * 0.02 * dt; }
+          else { d.resting = false; }
+        }
+
+        // Lay down a new glyph each time the head has travelled one glyph
+        const h = d.trail[0];
+        if (Math.hypot(d.x - h.x, d.y - h.y) >= L.size) {
+          d.trail.unshift({ x: d.x, y: d.y, c: pick() });
+          if (d.trail.length > L.trail) d.trail.pop();
+        }
+        // Glyphs flicker now and then
+        if (Math.random() < 0.04 * dt) d.trail[(Math.random() * d.trail.length) | 0].c = pick();
+
+        const tail = d.trail[d.trail.length - 1];
+        if (tail.y > H + L.size || d.x < -L.size * 2 || d.x > W + L.size * 2) spawn(d, false);
+      };
+
+      const render = (d) => {
+        const L = d.L, n = d.trail.length;
+        ctx.font = `500 ${L.size}px "Instrument Sans", ui-monospace, monospace`;
+        for (let i = n - 1; i >= 1; i--) {
+          const g = d.trail[i];
+          const a = L.alpha * Math.pow(1 - i / L.trail, 1.6) * 0.75;
+          ctx.fillStyle = d.red ? `rgba(221, 51, 51, ${a})` : `rgba(205, 205, 205, ${a})`;
+          ctx.fillText(g.c, g.x, g.y);
+        }
+        // The head: bright, with a soft glow on the near layer
+        const hd = d.trail[0];
+        if (L.glow) { ctx.shadowColor = d.red ? 'rgba(255, 90, 80, .9)' : 'rgba(255, 255, 255, .85)'; ctx.shadowBlur = L.glow; }
+        ctx.fillStyle = d.red ? `rgba(255, 138, 128, ${L.alpha})` : `rgba(255, 255, 255, ${L.alpha})`;
+        ctx.fillText(hd.c, d.x, d.y);
+        ctx.shadowBlur = 0;
+      };
+
+      let running = false;
+      const frame = (now) => {
+        const dt = Math.min((now - (last || now)) / 16.67, 3) * TIME;
+        last = now;
+        ctx.clearRect(0, 0, W, H);
+        for (const d of drops) { step(d, dt); render(d); }
+        if (running) requestAnimationFrame(frame);
+        else last = 0;
+      };
+
+      const start = () => {
+        if (running) return;
+        running = true;
+        requestAnimationFrame(frame);
+      };
+
+      resize();
+      addEventListener('resize', resize);
+      // Re-measure once the logo has its final size (fonts and image loaded)
+      const img = logo.querySelector('.sharp');
+      if (!img.complete) img.addEventListener('load', measure);
+      document.fonts && document.fonts.ready.then(measure);
+
+      // Pause when the tab is hidden, resume when it comes back
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) running = false; else start();
+      });
+
+      // Begin once the logo has resolved
+      setTimeout(start, 500);
+    })();
+
+    /* ---------- Cursor blur on the logo ---------- */
     (() => {
       const canHover = matchMedia('(hover: hover)').matches;
       const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (!canHover || calm) return;
 
       const logo = document.querySelector('.logo');
-      // Lens position eases toward the cursor so the blur glides rather than jumps
       const m = { x: 0, y: 0, tx: 0, ty: 0 };
       let raf = 0;
 
